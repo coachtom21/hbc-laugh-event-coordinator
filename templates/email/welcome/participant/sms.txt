@@ -1,0 +1,1 @@
+Human Gold: {{participant_display_name}}'s $12 annual Miner membership is active. Confirm email before organizer tools: {{confirm_email_url}} Reply STOP to stop texts.

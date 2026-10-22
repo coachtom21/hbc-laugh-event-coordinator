@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Welcome to Human Gold</title>
+</head>
+<body style="margin:0;background:#f4f6f8;color:#17202a;font-family:Arial,Helvetica,sans-serif;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Confirm your email and return to your Human Gold RSVP.</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f6f8;">
+    <tr><td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border-radius:12px;overflow:hidden;">
+        <tr><td style="background:#12263a;color:#ffffff;padding:24px 28px;">
+          <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;">Human Gold</div>
+          <h1 style="margin:8px 0 0;font-size:28px;line-height:1.2;">Welcome, Observer</h1>
+        </td></tr>
+        <tr><td style="padding:28px;">
+          <p style="margin:0 0 16px;font-size:17px;line-height:1.55;">Your phone has been verified and this device is now registered for Human Gold.</p>
+          <p style="margin:0 0 20px;font-size:16px;line-height:1.55;">Your <strong>{{rsvp_choice}}</strong> response for <strong>{{event_name}}</strong> with {{organization_name}} has been recorded. No payment or membership was required.</p>
+
+          {{#if email_confirmation_required}}
+          <div style="background:#eef6ff;border-radius:10px;padding:20px;margin:0 0 22px;">
+            <h2 style="margin:0 0 10px;font-size:20px;">Confirm your email</h2>
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">Confirm <strong>{{masked_email}}</strong> so it can be used for notices and secure device recovery.</p>
+            <a href="{{confirm_email_url}}" style="display:inline-block;background:#1769aa;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 20px;border-radius:7px;">Confirm My Email</a>
+            <p style="margin:14px 0 0;font-size:13px;line-height:1.45;color:#52616b;">This private link expires at {{confirmation_expires_at}} and can be used once. If opened on another device, it confirms your email but does not register that device.</p>
+          </div>
+          {{/if}}
+
+          <h2 style="margin:0 0 10px;font-size:20px;">What you can do</h2>
+          <ul style="margin:0 0 20px;padding-left:22px;font-size:15px;line-height:1.6;">
+            <li>Respond Observe or Participate to public LAUGH Events.</li>
+            <li>Choose a Practice FAITH Touchstone when offered.</li>
+            <li>Accept, decline or walk away from any encounter.</li>
+            <li>Receive Experience Presence only when you deliberately confirm it.</li>
+          </ul>
+
+          <p style="margin:0 0 14px;font-size:15px;line-height:1.55;">Experience Presence, or XP, is not money, cryptocurrency, wages, legal tender or a measure of human worth. Human Gold does not continuously track your location.</p>
+          <p style="margin:0 0 22px;font-size:15px;line-height:1.55;">Your device remains yours. A scan begins a request; it never completes an encounter without your choice.</p>
+
+          <a href="{{return_to_event_url}}" style="display:inline-block;background:#2d6a4f;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 20px;border-radius:7px;">Return to Human Gold</a>
+
+          <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#66717a;">Did not request this registration? Do not use the confirmation link. You may report it at <a href="{{privacy_help_url}}">{{privacy_help_label}}</a>.</p>
+        </td></tr>
+        <tr><td style="background:#f0f2f4;padding:18px 28px;font-size:12px;line-height:1.5;color:#5f6b73;">
+          Human Gold is an independent, nonpartisan proposed Detente 2030 testnet. Practice FAITH means Fair, Accepting, Insightful, Transparent and Humble. Discord Gracebook is optional.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

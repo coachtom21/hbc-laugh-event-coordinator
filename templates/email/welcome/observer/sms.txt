@@ -1,0 +1,1 @@
+Human Gold: Your phone is verified, this device is registered, and your {{rsvp_choice}} RSVP is saved. Confirm your email: {{confirm_email_url}} Reply STOP to stop texts.

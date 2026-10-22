@@ -1,0 +1,24 @@
+Subject: Welcome to Human Gold - confirm your email
+
+Welcome, Observer.
+
+Your phone has been verified and this device is now registered for Human Gold.
+
+Your {{rsvp_choice}} response for {{event_name}} with {{organization_name}} has been recorded. No payment or membership was required.
+
+CONFIRM YOUR EMAIL
+Confirm {{masked_email}} so it can be used for notices and secure device recovery:
+{{confirm_email_url}}
+
+This private link expires at {{confirmation_expires_at}} and can be used once. If opened on another device, it confirms your email but does not register that device.
+
+As an Observer, you may respond Observe or Participate to public LAUGH Events, choose a Practice FAITH Touchstone when offered, and accept, decline or walk away from any encounter.
+
+Experience Presence, or XP, is not money, cryptocurrency, wages, legal tender or a measure of human worth. Human Gold does not continuously track your location. A scan begins a request; it never completes an encounter without your choice.
+
+Return to Human Gold:
+{{return_to_event_url}}
+
+Did not request this registration? Do not use the confirmation link. Report it at {{privacy_help_url}}.
+
+Human Gold is an independent, nonpartisan proposed Detente 2030 testnet. Practice FAITH means Fair, Accepting, Insightful, Transparent and Humble. Discord Gracebook is optional.

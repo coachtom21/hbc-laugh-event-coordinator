@@ -1,0 +1,28 @@
+Subject: Your Miner membership is active
+
+Welcome, Participant.
+
+Your $12 annual Miner membership is active for the named beneficiary, {{participant_display_name}}.
+
+Membership term: {{membership_start_date}} through {{membership_expiration_date}}. This membership provides Human Gold Admin eligibility; access remains limited to organizations you create or that assign you.
+
+{{#if email_confirmation_required}}
+CONFIRM YOUR EMAIL
+Confirm {{masked_email}} before organizer dashboard access, protected operating roles, recovery or exports can be enabled:
+{{confirm_email_url}}
+
+This private link expires at {{confirmation_expires_at}} and can be used once. Opening it on another device confirms your email but does not register that device.
+{{/if}}
+
+Your Participant rights include creating a church or community workspace, scheduling LAUGH Events, publishing the Human Gold QR and RSVP postcards, reviewing responses and Touchstone demand, and using assigned protected roles after authorization.
+
+Membership does not make you a platform Super Admin and does not provide access to another organization without assignment. A Participate RSVP by itself does not create a paid membership or protected role.
+
+Experience Presence, or XP, is not money, cryptocurrency, wages, legal tender or a measure of human worth. Encounter confirmation always remains voluntary.
+
+Open Organizer Dashboard:
+{{organizer_dashboard_url}}
+
+Did not expect this membership? Do not use the confirmation link. Contact {{membership_help_url}}.
+
+Human Gold is an independent, nonpartisan proposed Detente 2030 testnet. Practice FAITH means Fair, Accepting, Insightful, Transparent and Humble. Discord Gracebook is optional.

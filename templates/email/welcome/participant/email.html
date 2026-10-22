@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Your Miner membership is active</title>
+</head>
+<body style="margin:0;background:#f4f6f8;color:#17202a;font-family:Arial,Helvetica,sans-serif;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;">Your annual Miner membership and organizer eligibility are active.</div>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f6f8;">
+    <tr><td align="center" style="padding:24px 12px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px;background:#ffffff;border-radius:12px;overflow:hidden;">
+        <tr><td style="background:#12263a;color:#ffffff;padding:24px 28px;">
+          <div style="font-size:13px;letter-spacing:.08em;text-transform:uppercase;">Human Gold</div>
+          <h1 style="margin:8px 0 0;font-size:28px;line-height:1.2;">Welcome, Participant</h1>
+        </td></tr>
+        <tr><td style="padding:28px;">
+          <p style="margin:0 0 16px;font-size:17px;line-height:1.55;">Your $12 annual Miner membership is active for the named beneficiary, <strong>{{participant_display_name}}</strong>.</p>
+          <p style="margin:0 0 20px;font-size:15px;line-height:1.55;">Membership term: {{membership_start_date}} through {{membership_expiration_date}}. This membership provides Human Gold Admin eligibility; access remains limited to organizations you create or that assign you.</p>
+
+          {{#if email_confirmation_required}}
+          <div style="background:#eef6ff;border-radius:10px;padding:20px;margin:0 0 22px;">
+            <h2 style="margin:0 0 10px;font-size:20px;">Confirm your email before opening protected tools</h2>
+            <p style="margin:0 0 16px;font-size:15px;line-height:1.5;">Confirm <strong>{{masked_email}}</strong> before organizer dashboard access, protected operating roles, recovery or exports can be enabled.</p>
+            <a href="{{confirm_email_url}}" style="display:inline-block;background:#1769aa;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 20px;border-radius:7px;">Confirm My Email</a>
+            <p style="margin:14px 0 0;font-size:13px;line-height:1.45;color:#52616b;">This private link expires at {{confirmation_expires_at}} and can be used once. Opening it on another device confirms your email but does not register that device.</p>
+          </div>
+          {{/if}}
+
+          <h2 style="margin:0 0 10px;font-size:20px;">Your Participant rights</h2>
+          <ul style="margin:0 0 20px;padding-left:22px;font-size:15px;line-height:1.6;">
+            <li>Create an independent church or community workspace.</li>
+            <li>Schedule and manage LAUGH Events.</li>
+            <li>Publish the permanent Human Gold QR and RSVP postcards.</li>
+            <li>Review Observe and Participate responses, volunteers and Touchstone demand.</li>
+            <li>Use assigned protected operating roles after authorization.</li>
+          </ul>
+
+          <p style="margin:0 0 14px;font-size:15px;line-height:1.55;">Membership does not make you a platform Super Admin and does not provide access to another organization without assignment. A Participate RSVP by itself does not create a paid membership or protected role.</p>
+          <p style="margin:0 0 22px;font-size:15px;line-height:1.55;">Experience Presence, or XP, is not money, cryptocurrency, wages, legal tender or a measure of human worth. Encounter confirmation always remains voluntary.</p>
+
+          <a href="{{organizer_dashboard_url}}" style="display:inline-block;background:#2d6a4f;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 20px;border-radius:7px;">Open Organizer Dashboard</a>
+
+          <p style="margin:24px 0 0;font-size:13px;line-height:1.5;color:#66717a;">Did not expect this membership? Do not use the confirmation link. Contact <a href="{{membership_help_url}}">{{membership_help_label}}</a>.</p>
+        </td></tr>
+        <tr><td style="background:#f0f2f4;padding:18px 28px;font-size:12px;line-height:1.5;color:#5f6b73;">
+          Human Gold is an independent, nonpartisan proposed Detente 2030 testnet. Practice FAITH means Fair, Accepting, Insightful, Transparent and Humble. Discord Gracebook is optional.
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>
