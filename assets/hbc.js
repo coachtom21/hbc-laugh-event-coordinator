@@ -554,9 +554,22 @@
   // operator_router: event-specific prompt only. Never the organizer dashboard,
   // which lives separately at /organize.
   const renderOperatorPrompt = (route) => {
-    const authorizations = Array.isArray(route.authorizations) && route.authorizations.length
+    let authorizations = Array.isArray(route.authorizations) && route.authorizations.length
       ? route.authorizations.filter((a) => a && (a.role === 'greeter' || a.role === 'host') && a.assignment_uuid)
       : (route.authorization && route.authorization.assignment_uuid ? [route.authorization] : []);
+    if (!authorizations.length && route.assignment_uuid && (route.operator_role === 'host' || route.operator_role === 'greeter')) {
+      const synthesized = { assignment_uuid: route.assignment_uuid, role: route.operator_role };
+      if (route.operator_role === 'host') {
+        synthesized.dashboard_url = route.dashboard_url || new URL('/organize/', window.location.origin).href;
+      }
+      authorizations = [synthesized];
+    }
+    if (!route.fallback_rsvp && route.event && (route.not_now_fallback || route.allowed_actions)) {
+      route.fallback_rsvp = {
+        event: route.event,
+        allowed_actions: (route.not_now_fallback && route.not_now_fallback.allowed_actions) || route.allowed_actions,
+      };
+    }
     const greeterDefault = authorizations.find((a) => a.role === 'greeter');
     route.acting_as = route.acting_as && route.acting_as.assignment_uuid ? route.acting_as : (greeterDefault || authorizations[0] || null);
     if (!route.acting_as) {

@@ -15,6 +15,9 @@ $host_name            = (string) ( $events_payload['host_name'] ?? '' );
 $org_code             = ( $host_uuid && class_exists( 'HBC_Prod_Orgs' ) ) ? HBC_Prod_Orgs::public_code_for_host( $host_uuid ) : '';
 $can_manage           = is_user_logged_in() && current_user_can( 'hbc_admin' ) && $host_uuid !== ''
 	&& (bool) apply_filters( 'hbc_user_can_access_host', false, get_current_user_id(), $host_uuid );
+$miner_checkout       = class_exists( 'HBC_Production_Adapters' )
+	? HBC_Production_Adapters::miner_checkout_url()
+	: add_query_arg( 'level', '2', home_url( '/membership-checkout/' ) );
 
 $hbc_to_datetime_local = static function ( $iso ): string {
 	$iso = trim( (string) $iso );
@@ -98,7 +101,7 @@ get_header();
 			<div id="hbc-membership-return-status" data-login-url="<?php echo esc_url( wp_login_url( home_url( '/organize' ) ) ); ?>"><p>Checking your membership status&hellip;</p></div>
 			<div class="hbc-actions">
 				<a class="hbc-button" href="<?php echo esc_url( wp_login_url( home_url( '/organize' ) ) ); ?>">Register or sign in</a>
-				<a class="hbc-button hbc-secondary" href="https://www.megavoters.com/start/">Start or confirm membership</a>
+				<a class="hbc-button hbc-secondary" href="<?php echo esc_url( $miner_checkout ); ?>">Start or confirm membership</a>
 				<a class="hbc-button hbc-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=hbc-human-gold' ) ); ?>">WP Human Gold</a>
 				<a class="hbc-button hbc-secondary" href="<?php echo esc_url( home_url( '/print-studio' ) ); ?>">Print Materials</a>
 			</div>
@@ -267,7 +270,7 @@ get_header();
 			<h2>Sponsorship handoff</h2>
 			<p>Sponsorship and fundraising stay on the owner payment path. Organizers do not take platform money here.</p>
 			<div class="hbc-actions">
-				<a class="hbc-button hbc-secondary" href="https://www.megavoters.com/discover/">Open membership / sponsorship path</a>
+				<a class="hbc-button hbc-secondary" href="<?php echo esc_url( $miner_checkout ); ?>">Open membership / sponsorship path</a>
 				<a class="hbc-button hbc-secondary" href="<?php echo esc_url( home_url( '/print-studio' ) ); ?>">Print Materials Studio</a>
 			</div>
 		</section>
@@ -276,7 +279,7 @@ get_header();
 			<h2>Begin with your church or community</h2>
 			<p>Become a Miner Host, register your organization in Human Gold, publish an event, and place the permanent Human Gold QR on RSVP postcards.</p>
 			<div class="hbc-actions">
-				<a class="hbc-button" href="https://www.megavoters.com/start/">Become a Host — $12/year</a>
+				<a class="hbc-button" href="<?php echo esc_url( $miner_checkout ); ?>">Become a Host — $12/year</a>
 				<a class="hbc-button hbc-secondary" href="<?php echo esc_url( admin_url( 'admin.php?page=hbc-human-gold' ) ); ?>">I already have Miner access</a>
 				<a class="hbc-button hbc-secondary" href="<?php echo esc_url( home_url( '/r' ) ); ?>">Open public RSVP</a>
 			</div>

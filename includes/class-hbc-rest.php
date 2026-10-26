@@ -592,9 +592,7 @@ final class HBC_Laugh_REST {
             return self::not_connected('Miner membership-checkout adapter');
         }
         $checkout_url = esc_url_raw((string) $result['checkout_url']);
-        $host = strtolower((string) wp_parse_url($checkout_url, PHP_URL_HOST));
-        $scheme = strtolower((string) wp_parse_url($checkout_url, PHP_URL_SCHEME));
-        if ($scheme !== 'https' || !in_array($host, array('megavoters.com', 'www.megavoters.com'), true)) {
+        if (!self::membership_checkout_destination_allowed($checkout_url)) {
             return self::not_connected('Miner membership-checkout adapter (invalid destination)');
         }
         return new WP_REST_Response(array('data' => array(
@@ -1205,6 +1203,27 @@ final class HBC_Laugh_REST {
 
     public static function integration_required(): WP_REST_Response {
         return self::not_connected('Existing Human Gold service layer');
+    }
+
+    /**
+     * $12 Miner checkout stays on this site. Megavoters remains allowed for an older handoff.
+     * Local http is allowed only for a .local or localhost host.
+     */
+    private static function membership_checkout_destination_allowed(string $checkout_url): bool {
+        $host = strtolower((string) wp_parse_url($checkout_url, PHP_URL_HOST));
+        $scheme = strtolower((string) wp_parse_url($checkout_url, PHP_URL_SCHEME));
+        $home_host = strtolower((string) wp_parse_url(home_url(), PHP_URL_HOST));
+        $allowed = array('humanblockchain.info', 'www.humanblockchain.info', 'megavoters.com', 'www.megavoters.com');
+        if ($home_host !== '') {
+            $allowed[] = $home_host;
+        }
+        if (!in_array($host, $allowed, true)) {
+            return false;
+        }
+        if ($scheme === 'https') {
+            return true;
+        }
+        return $scheme === 'http' && ($host === 'localhost' || substr($host, -6) === '.local');
     }
 
     private static function not_connected(string $adapter): WP_REST_Response {
