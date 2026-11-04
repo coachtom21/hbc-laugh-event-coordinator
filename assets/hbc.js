@@ -14,7 +14,11 @@
   const DEVICE_TOKEN_KEY = 'hbc_device_token';
   const RETURN_TO_ENCOUNTER_KEY = 'hbc_return_to_encounter';
   const getDeviceToken = () => {
-    try { return localStorage.getItem(DEVICE_TOKEN_KEY) || ''; } catch (e) { return ''; }
+    try {
+      const tabToken = sessionStorage.getItem('hbc_device_token_tab') || '';
+      if (tabToken) return tabToken;
+      return localStorage.getItem(DEVICE_TOKEN_KEY) || '';
+    } catch (e) { return ''; }
   };
   const setDeviceToken = (token) => {
     try { if (token) localStorage.setItem(DEVICE_TOKEN_KEY, token); } catch (e) { /* storage unavailable: device will re-register next visit */ }
@@ -70,6 +74,11 @@
     } catch (e) {
       return isoString;
     }
+  };
+
+  const organizerCta = (organizer) => {
+    if (!organizer || !organizer.dashboard_url) return '';
+    return `<a class="hbc-button" href="${esc(organizer.dashboard_url)}">Organizer dashboard</a>`;
   };
 
   const showError = (message) => {
@@ -172,6 +181,105 @@
     };
   };
 
+  // After the text-message code, a guest can become a host. The encounter QR stays on the host phone.
+  const renderVerifiedChoices = (result = {}, event = {}) => {
+    const eventName = event && event.name ? event.name : 'this event';
+    const responseLabel = result.response === 'participate'
+      ? 'Participate — you asked to help. That is a volunteer request.'
+      : 'Observe — you plan to attend.';
+    content.innerHTML = `
+      <p><strong>Phone verified</strong></p>
+      <h2>${esc(eventName)}</h2>
+      <p>${esc(responseLabel)}</p>
+      <p>Your RSVP is recorded. Showing up is confirmed later, when the host phone starts an encounter and another phone scans the code.</p>
+      <div class="hbc-actions">
+        <button class="hbc-button hbc-secondary" type="button" id="hbc-choose-host">Become the host</button>
+        ${organizerCta(result.organizer)}
+      </div>`;
+    document.querySelector('#hbc-choose-host').onclick = () => {
+      if (result.organizer && result.organizer.name) {
+        renderHostSaved({ ...result.organizer, already: true }, result, event);
+        return;
+      }
+      renderOrganizationForm(result, event);
+    };
+  };
+
+  const renderOrganizationForm = (result, event) => {
+    content.innerHTML = `
+      <h2>Register organization</h2>
+      <p>This phone becomes the host of the organization you enter.</p>
+      <form id="hbc-org-form">
+        <div class="hbc-field"><label>Organization name<input type="text" name="name" required maxlength="180"></label></div>
+        <div class="hbc-field"><label>Type<select name="type">
+          <option value="church">Church</option>
+          <option value="community">Community</option>
+          <option value="nonprofit">Nonprofit</option>
+        </select></label></div>
+        <div class="hbc-field">
+          <label>Public code <em>(optional)</em><input type="text" name="public_code" maxlength="16" autocomplete="off"></label>
+          <p class="hbc-field-help">4–16 characters. Leave blank to choose one automatically.</p>
+        </div>
+        <div class="hbc-actions">
+          <button class="hbc-button" type="submit">Register organization</button>
+          <button class="hbc-button hbc-secondary" type="button" id="hbc-org-back">Back</button>
+        </div>
+      </form>`;
+    document.querySelector('#hbc-org-back').onclick = () => renderVerifiedChoices(result, event);
+    document.querySelector('#hbc-org-form').onsubmit = (e) => {
+      e.preventDefault();
+      const form = new FormData(e.currentTarget);
+      savePhoneAsHost(result, event, {
+        name: String(form.get('name') || ''),
+        type: String(form.get('type') || 'church'),
+        public_code: String(form.get('public_code') || '')
+      });
+    };
+  };
+
+  const renderHostSaved = (saved, result, event) => {
+    const orgName = saved && saved.name ? saved.name : 'your organization';
+    const lead = saved && saved.already
+      ? `This phone is already the organizer of ${orgName}.`
+      : `This phone is saved as the organizer of ${orgName}.`;
+    const code = saved && saved.public_code
+      ? `<p>Organization code: <strong>${esc(saved.public_code)}</strong></p>`
+      : '';
+    content.innerHTML = `
+      <h2>You are the host</h2>
+      <p>${esc(lead)}</p>
+      ${code}
+      <p>A host can create their own events and run encounters for those events.</p>
+      <div class="hbc-actions">
+        <a class="hbc-button" href="${esc(saved && saved.dashboard_url ? saved.dashboard_url : '/super-admin/?organizer=1')}">Organizer dashboard</a>
+        <button class="hbc-button hbc-secondary" type="button" id="hbc-choice-back">Back</button>
+      </div>`;
+    document.querySelector('#hbc-choice-back').onclick = () => renderVerifiedChoices({ ...result, organizer: saved }, event);
+  };
+
+  const savePhoneAsHost = async (result, event, organization) => {
+    const button = document.querySelector('#hbc-org-form button[type="submit"]');
+    if (button) {
+      button.disabled = true;
+      button.classList.add('hbc-button--busy');
+      button.textContent = 'Saving…';
+    }
+    try {
+      const saved = await api('public/host/apply', {
+        method: 'POST',
+        body: JSON.stringify(organization || {})
+      });
+      renderHostSaved(saved.data || {}, result, event);
+    } catch (err) {
+      if (button) {
+        button.disabled = false;
+        button.classList.remove('hbc-button--busy');
+        button.textContent = 'Register organization';
+      }
+      showError(err.message);
+    }
+  };
+
   // Optional ?org=PUBLICCODE scopes the directory to one registered organization.
   const orgCode = (() => {
     try { return new URLSearchParams(window.location.search).get('org') || ''; } catch (e) { return ''; }
@@ -224,6 +332,7 @@
       const faithUrl = practiceFaithExploreUrl();
       content.innerHTML = `
         ${orgBanner}
+        ${entry.organizer && entry.organizer.dashboard_url ? `<div class="hbc-actions">${organizerCta(entry.organizer)}</div>` : ''}
         <h2>Choose your current event</h2>
         <p>Organization name appears with each event. Search, select, or enter the short code printed beside the QR.</p>
         <form id="hbc-event-search" class="hbc-field">
@@ -374,6 +483,7 @@
     content.innerHTML = `
       ${emailPrompt}
       <p><strong>Device status: ${route.device_state === 'registered' ? 'Registered' : 'Registration required'}</strong></p>
+      ${route.organizer && route.organizer.dashboard_url ? `<div class="hbc-actions">${organizerCta(route.organizer)}</div>` : ''}
       <h2>${esc(event.name)}</h2>
       <p>${esc(formatEventDateTime(event.starts_at))}${event.location ? ' · ' + esc(event.location) : ''}</p>
       <form id="hbc-rsvp">
@@ -478,7 +588,15 @@
       e.preventDefault();
       const form = new FormData(e.currentTarget);
       const submit = e.currentTarget.querySelector('button[type="submit"]');
-      if (submit) submit.disabled = true;
+      const walk = document.querySelector('#hbc-walk-contact');
+      const label = submit ? submit.textContent : '';
+      if (submit) {
+        submit.disabled = true;
+        submit.classList.add('hbc-button--busy');
+        submit.setAttribute('aria-busy', 'true');
+        submit.textContent = 'Sending code…';
+      }
+      if (walk) walk.disabled = true;
       try {
         const result = await api('public/registration/start', {
           method: 'POST',
@@ -496,7 +614,13 @@
         });
         renderOtp(route, result.data);
       } catch (err) {
-        if (submit) submit.disabled = false;
+        if (submit) {
+          submit.disabled = false;
+          submit.classList.remove('hbc-button--busy');
+          submit.removeAttribute('aria-busy');
+          submit.textContent = label;
+        }
+        if (walk) walk.disabled = false;
         showError(err.message);
       }
     };
@@ -544,11 +668,34 @@
         });
         if (result.data && result.data.device_token) setDeviceToken(result.data.device_token);
         if (redirectToPendingEncounterIfAny()) return;
-        renderRsvpComplete(result.data || {});
+        const verified = result.data || {};
+        if (verified.withdrawn || verified.response === 'walk_away') {
+          renderRsvpComplete(verified);
+          return;
+        }
+        await openHostEncounterOrGuestChoices(verified, route.event || {});
       } catch (err) {
         showError(err.message);
       }
     };
+  };
+
+  // A host or greeter of this event goes straight to the real encounter.
+  // A guest keeps the RSVP. Their phone does not create the five-minute code.
+  const openHostEncounterOrGuestChoices = async (verified, event) => {
+    const eventUuid = (event && event.event_uuid) || verified.event_uuid || '';
+    if (eventUuid) {
+      try {
+        const entry = await api('public/entry?event=' + encodeURIComponent(eventUuid));
+        if (entry.data && entry.data.route_view === 'operator_router') {
+          renderOperatorPrompt(entry.data);
+          return;
+        }
+      } catch (err) {
+        // The RSVP is already saved. Show the guest choices below.
+      }
+    }
+    renderVerifiedChoices(verified, event || {});
   };
 
   // operator_router: event-specific prompt only. Never the organizer dashboard,
@@ -580,7 +727,7 @@
       ? `<label>Acting as for this event<select id="hbc-acting-as">${authorizations.map((a) => `<option value="${esc(a.assignment_uuid)}"${a.assignment_uuid === route.acting_as.assignment_uuid ? ' selected' : ''}>${esc(a.role === 'host' ? 'Host — manage event and encounters' : 'Greeter — initiate encounters')}</option>`).join('')}</select></label>`
       : `<p><strong>Acting as:</strong> ${esc(route.acting_as.role === 'host' ? 'Host' : 'Greeter')}</p>`;
     const hostAction = route.acting_as.role === 'host' && route.acting_as.dashboard_url
-      ? `<a class="hbc-button hbc-secondary" href="${esc(route.acting_as.dashboard_url)}">Proceed to Dashboard</a>`
+      ? `<a class="hbc-button hbc-secondary" href="${esc(route.acting_as.dashboard_url)}">Organizer dashboard</a>`
       : '';
     content.innerHTML = `
       <h2>${esc(route.event.name)}</h2>
@@ -759,7 +906,14 @@
 
   // --- entry point -------------------------------------------------------
   try {
-    if (new URLSearchParams(window.location.search).get('return_error')) {
+    const here = new URL(window.location.href);
+    if (here.searchParams.has('console') || here.searchParams.has('hbc_console')) {
+      here.searchParams.delete('console');
+      here.searchParams.delete('hbc_console');
+      const next = here.pathname + here.search + here.hash;
+      window.history.replaceState({}, '', next);
+    }
+    if (here.searchParams.get('return_error')) {
       showError('That closed-loop return link expired or was invalid. Select your event again — your RSVP was not changed.');
     }
   } catch (e) { /* ignore */ }

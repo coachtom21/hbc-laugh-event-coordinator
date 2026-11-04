@@ -60,6 +60,18 @@ final class HBC_Laugh_REST {
         register_rest_route(self::NS, '/public/registration/verify', array(
             'methods' => 'POST', 'callback' => array(__CLASS__, 'registration_verify'), 'permission_callback' => '__return_true'));
 
+        register_rest_route(self::NS, '/public/host/apply', array(
+            'methods' => 'POST', 'callback' => array(__CLASS__, 'apply_for_host'), 'permission_callback' => '__return_true'));
+
+        register_rest_route(self::NS, '/public/host/dashboard', array(
+            'methods' => 'GET', 'callback' => array(__CLASS__, 'host_dashboard'), 'permission_callback' => '__return_true'));
+
+        register_rest_route(self::NS, '/public/host/events', array(
+            'methods' => 'POST', 'callback' => array(__CLASS__, 'host_create_event'), 'permission_callback' => '__return_true'));
+
+        register_rest_route(self::NS, '/public/host/requests/(?P<uuid>[0-9a-fA-F-]{36})/(?P<decision>accept|decline)', array(
+            'methods' => 'POST', 'callback' => array(__CLASS__, 'host_review_request'), 'permission_callback' => '__return_true'));
+
         register_rest_route(self::NS, '/public/events/(?P<event_uuid>[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})/rsvps', array(
             'methods' => 'POST', 'callback' => array(__CLASS__, 'registered_device_rsvp'), 'permission_callback' => '__return_true'));
 
@@ -425,6 +437,9 @@ final class HBC_Laugh_REST {
             if (!empty($page['organization']) && is_array($page['organization'])) {
                 $data['organization'] = $page['organization'];
             }
+            if (!empty($page['organizer']) && is_array($page['organizer'])) {
+                $data['organizer'] = $page['organizer'];
+            }
             return new WP_REST_Response(array('data' => $data), 200);
         }
         if (!self::is_uuid($event_uuid)) {
@@ -512,10 +527,116 @@ final class HBC_Laugh_REST {
             return self::not_connected('OTP verification and RSVP transaction adapter');
         }
         $result = apply_filters('hbc_complete_registration', null, $body);
+        if (is_array($result) && !empty($result['error']) && is_array($result['error'])) {
+            $code = sanitize_key((string) ($result['error']['code'] ?? 'device_save_failed'));
+            $message = sanitize_text_field((string) ($result['error']['message'] ?? 'This device could not be saved.'));
+            $status = $code === 'invalid_code' ? 422 : 500;
+            return new WP_REST_Response(array('error' => array('code' => $code, 'message' => $message)), $status);
+        }
         if (!$result) {
             return new WP_REST_Response(array('error' => array('code' => 'invalid_code', 'message' => 'That code is invalid or has expired.')), 422);
         }
         return new WP_REST_Response(array('data' => $result), 201);
+    }
+
+    /**
+     * Saves the verified phone as the organizer of its own organization.
+     * The device token is the only identity. This does not grant Super Admin.
+     */
+    public static function apply_for_host(WP_REST_Request $request): WP_REST_Response {
+        $identity_uuid = HBC_Laugh_Auth::require_recognized_device($request);
+        if (is_wp_error($identity_uuid)) {
+            $err = $identity_uuid;
+            $code = $err->get_error_code() === 'hbc_integration_required' ? 'integration_required' : 'device_token_invalid';
+            return new WP_REST_Response(array('error' => array('code' => $code, 'message' => $err->get_error_message())), (int) $err->get_error_data()['status']);
+        }
+        if (!class_exists('HBC_Prod_Store') || !method_exists('HBC_Prod_Store', 'save_phone_as_organizer')) {
+            return self::not_connected('Host assignment');
+        }
+        $body = $request->get_json_params();
+        $result = HBC_Prod_Store::save_phone_as_organizer((string) $identity_uuid, is_array($body) ? $body : array());
+        if (!empty($result['error']) && is_array($result['error'])) {
+            $code = sanitize_key((string) ($result['error']['code'] ?? 'host_save_failed'));
+            $message = sanitize_text_field((string) ($result['error']['message'] ?? 'This phone could not be saved as the organizer.'));
+            $status = in_array($code, array('identity_required', 'device_required', 'rsvp_required', 'validation_error', 'duplicate_public_code'), true) ? 422 : 500;
+            return new WP_REST_Response(array('error' => array('code' => $code, 'message' => $message)), $status);
+        }
+        return new WP_REST_Response(array('data' => $result), 200);
+    }
+
+    /**
+     * Organizer dashboard for this phone. Each event includes its own
+     * Participate requests and encounters. Trade controls are not included.
+     */
+    public static function host_dashboard(WP_REST_Request $request): WP_REST_Response {
+        $identity_uuid = HBC_Laugh_Auth::require_recognized_device($request);
+        if (is_wp_error($identity_uuid)) {
+            $err = $identity_uuid;
+            $code = $err->get_error_code() === 'hbc_integration_required' ? 'integration_required' : 'device_token_invalid';
+            return new WP_REST_Response(array('error' => array('code' => $code, 'message' => $err->get_error_message())), (int) $err->get_error_data()['status']);
+        }
+        if (!class_exists('HBC_Prod_Store') || !method_exists('HBC_Prod_Store', 'organizer_dashboard')) {
+            return self::not_connected('Organizer dashboard');
+        }
+        $result = HBC_Prod_Store::organizer_dashboard((string) $identity_uuid);
+        if (!empty($result['error']) && is_array($result['error'])) {
+            $message = sanitize_text_field((string) ($result['error']['message'] ?? 'This phone is not an organizer.'));
+            return new WP_REST_Response(array('error' => array('code' => 'not_host', 'message' => $message)), 403);
+        }
+        return new WP_REST_Response(array('data' => $result), 200);
+    }
+
+    /**
+     * Publish an event for an organization this phone organizes.
+     */
+    public static function host_create_event(WP_REST_Request $request): WP_REST_Response {
+        $identity_uuid = HBC_Laugh_Auth::require_recognized_device($request);
+        if (is_wp_error($identity_uuid)) {
+            $err = $identity_uuid;
+            $code = $err->get_error_code() === 'hbc_integration_required' ? 'integration_required' : 'device_token_invalid';
+            return new WP_REST_Response(array('error' => array('code' => $code, 'message' => $err->get_error_message())), (int) $err->get_error_data()['status']);
+        }
+        if (!class_exists('HBC_Prod_Store') || !method_exists('HBC_Prod_Store', 'create_organizer_event')) {
+            return self::not_connected('Organizer dashboard');
+        }
+        $body = $request->get_json_params();
+        $result = HBC_Prod_Store::create_organizer_event((string) $identity_uuid, is_array($body) ? $body : array());
+        if (!empty($result['error']) && is_array($result['error'])) {
+            $code = sanitize_key((string) ($result['error']['code'] ?? 'validation_error'));
+            $message = sanitize_text_field((string) ($result['error']['message'] ?? 'That event could not be saved.'));
+            $status = $code === 'not_host' ? 403 : 422;
+            return new WP_REST_Response(array('error' => array('code' => $code, 'message' => $message)), $status);
+        }
+        return new WP_REST_Response(array('data' => $result), 201);
+    }
+
+    /**
+     * Accept or decline one Participate request. The event must belong to this organizer.
+     */
+    public static function host_review_request(WP_REST_Request $request): WP_REST_Response {
+        $identity_uuid = HBC_Laugh_Auth::require_recognized_device($request);
+        if (is_wp_error($identity_uuid)) {
+            $err = $identity_uuid;
+            $code = $err->get_error_code() === 'hbc_integration_required' ? 'integration_required' : 'device_token_invalid';
+            return new WP_REST_Response(array('error' => array('code' => $code, 'message' => $err->get_error_message())), (int) $err->get_error_data()['status']);
+        }
+        if (!class_exists('HBC_Prod_Store') || !method_exists('HBC_Prod_Store', 'review_organizer_request')) {
+            return self::not_connected('Organizer dashboard');
+        }
+        $uuid = sanitize_text_field((string) $request->get_param('uuid'));
+        $decision = sanitize_key((string) $request->get_param('decision'));
+        $decision = $decision === 'accept' ? 'accepted' : ($decision === 'decline' ? 'declined' : '');
+        if (!self::is_uuid($uuid) || $decision === '') {
+            return new WP_REST_Response(array('error' => array('code' => 'validation_error', 'message' => 'A valid request and decision are required.')), 422);
+        }
+        $result = HBC_Prod_Store::review_organizer_request((string) $identity_uuid, $uuid, $decision);
+        if (!empty($result['error']) && is_array($result['error'])) {
+            $code = sanitize_key((string) ($result['error']['code'] ?? 'request_forbidden'));
+            $message = sanitize_text_field((string) ($result['error']['message'] ?? 'That request could not be updated.'));
+            $status = $code === 'not_found' ? 404 : ($code === 'validation_error' ? 422 : 403);
+            return new WP_REST_Response(array('error' => array('code' => $code, 'message' => $message)), $status);
+        }
+        return new WP_REST_Response(array('data' => $result), 200);
     }
 
     /**

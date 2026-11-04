@@ -323,6 +323,33 @@ body.hbc-page:not(.hbc-page--site) .hbc-card {
 	color: var(--hbc-navy) !important;
 }
 
+.hbc-page button.hbc-button.hbc-button--busy,
+.hbc-page button.hbc-button.hbc-button--busy:disabled {
+	cursor: progress;
+	opacity: 1;
+}
+
+.hbc-page button.hbc-button.hbc-button--busy::before {
+	content: "";
+	width: 14px;
+	height: 14px;
+	flex: 0 0 14px;
+	border: 2px solid rgba(11, 31, 51, 0.28);
+	border-top-color: var(--hbc-navy);
+	border-radius: 50%;
+	animation: hbc-spin 0.7s linear infinite;
+}
+
+@keyframes hbc-spin {
+	to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.hbc-page button.hbc-button.hbc-button--busy::before {
+		animation: none;
+	}
+}
+
 .hbc-page .hbc-button.hbc-secondary,
 .hbc-page a.hbc-button.hbc-secondary,
 .hbc-page button.hbc-button.hbc-secondary {
