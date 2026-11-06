@@ -1105,8 +1105,29 @@ final class HBC_Laugh_REST {
      * freshness check against the CURRENT time here would wrongly penalize the normal gap
      * between an attendee's accept and the operator's later confirm inside the same five-minute
      * window; what still matters is that the stored reading is a real, sufficiently accurate
-     * coordinate to compare against.
+     * coordinate to compare against. The five-minute encounter expiry is checked separately.
      */
+    private static function sanitize_stored_location($raw): ?array {
+        if (!is_array($raw) || !isset($raw['latitude'], $raw['longitude'], $raw['accuracy_meters'], $raw['captured_at'])) {
+            return null;
+        }
+        $lat = is_numeric($raw['latitude']) ? (float) $raw['latitude'] : null;
+        $lng = is_numeric($raw['longitude']) ? (float) $raw['longitude'] : null;
+        $accuracy = is_numeric($raw['accuracy_meters']) ? (float) $raw['accuracy_meters'] : null;
+        $captured_at = is_string($raw['captured_at']) ? strtotime($raw['captured_at']) : false;
+        if ($lat === null || $lng === null || $lat < -90 || $lat > 90 || $lng < -180 || $lng > 180
+            || $accuracy === null || $accuracy < 0 || $accuracy > 50
+            || $captured_at === false) {
+            return null;
+        }
+        return array(
+            'latitude' => $lat,
+            'longitude' => $lng,
+            'accuracy_meters' => $accuracy,
+            'captured_at' => gmdate('c', $captured_at),
+        );
+    }
+
     /** Great-circle distance in meters between two lat/lng points (haversine formula). */
     private static function haversine_meters(float $lat1, float $lng1, float $lat2, float $lng2): float {
         $earth_radius_m = 6371000.0;
@@ -1151,9 +1172,9 @@ final class HBC_Laugh_REST {
         if ($attendee_identity_uuid === '' || hash_equals($attendee_identity_uuid, $operator_identity_uuid)) {
             return array('passed' => false, 'result' => array('state' => 'same_device_rejected', 'proximity_assurance' => 'failed_distinct_device_requirement', 'xp_human_gold_accepted' => false, 'xp_play_dough_status' => 'not_issued'));
         }
-        $attendee_location = self::sanitize_location($evidence['attendee_location'] ?? null);
+        $attendee_location = self::sanitize_stored_location($evidence['attendee_location'] ?? null);
         if ($attendee_location === null) {
-            return $failed('missing_stale_or_inaccurate_attendee_location');
+            return $failed('missing_or_inaccurate_attendee_location');
         }
         $expires_at = isset($evidence['expires_at']) && is_string($evidence['expires_at']) ? strtotime($evidence['expires_at']) : false;
         if ($expires_at === false || $expires_at < time()) {
