@@ -180,10 +180,13 @@ add_action('wp_enqueue_scripts', function () {
     }
     if (get_query_var('hbc_encounter_token')) {
         wp_enqueue_style('hbc-laugh', plugins_url('assets/hbc.css', __FILE__), array(), $css_ver);
-        wp_enqueue_script('hbc-laugh-encounter', plugins_url('assets/encounter.js', __FILE__), array(), HBC_LAUGH_VERSION, true);
+        $encounter_ver = (string) filemtime(HBC_LAUGH_DIR . 'assets/encounter.js');
+        wp_enqueue_script('hbc-laugh-encounter', plugins_url('assets/encounter.js', __FILE__), array(), $encounter_ver, true);
         wp_localize_script('hbc-laugh-encounter', 'HBC_LAUGH', array(
             'rest' => esc_url_raw(rest_url('hbc-laugh/v1/')),
             'nonce' => wp_create_nonce('wp_rest'),
+            'homeUrl' => esc_url_raw(home_url('/')),
+            'eventsUrl' => esc_url_raw(home_url('/r')),
         ));
     }
     // confirm-email.php is server-rendered only; no script needed.

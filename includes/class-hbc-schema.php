@@ -202,8 +202,8 @@ final class HBC_Laugh_Schema {
             KEY ix_host_action (host_uuid,action)
         ) $charset;");
 
-        add_role('hbc_admin', 'Human Gold Admin', array('read' => true, 'hbc_admin' => true));
-        add_role('hbc_super_admin', 'Human Gold Super Admin', array('read' => true, 'hbc_super_admin' => true));
+        add_role('hbc_super_admin', 'Super Admin', array('read' => true, 'hbc_super_admin' => true));
+        add_role('hbc_host', 'Host', array('read' => true, 'hbc_admin' => true));
     }
 
     // ---- migration 2: v2.4 additions (migration-v1-to-v2.sql, prefixed) -------

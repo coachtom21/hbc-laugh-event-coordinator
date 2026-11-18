@@ -85,9 +85,16 @@
     extinguished: { title: 'Pending XP Extinguished', body: 'You walked away from this event’s RSVP. Pending XP for this encounter was voided. Matured XP is unchanged.' },
   };
 
+  const pageUrl = (key, fallback) => {
+    const value = window.HBC_LAUGH && HBC_LAUGH[key] ? HBC_LAUGH[key] : fallback;
+    return esc(value);
+  };
+
+  const leaveActions = () => `<div class="hbc-actions"><a class="hbc-button" href="${pageUrl('homeUrl', '/')}">Back to home</a><a class="hbc-button hbc-secondary" href="${pageUrl('eventsUrl', '/r')}">Back to events</a></div>`;
+
   const renderTerminal = (state) => {
     const info = STATE_MESSAGES[state] || { title: 'This Encounter Is Unavailable', body: 'Please ask the operator to initiate a new encounter.' };
-    content.innerHTML = `<h2>${esc(info.title)}</h2><p>${esc(info.body)}</p>`;
+    content.innerHTML = `<h2>${esc(info.title)}</h2><p>${esc(info.body)}</p>${leaveActions()}`;
   };
 
   const confirmationDetails = (info) => {
@@ -104,7 +111,7 @@
     const xp = info.xp_play_dough_status === 'issued'
       ? '<p><strong>1 sextillion XP Play Dough received.</strong></p>'
       : '<p><strong>1 sextillion XP Play Dough approved—ledger posting pending.</strong></p>';
-    content.innerHTML = '<h2>LAUGH Event Confirmed</h2>' + xp + '<p>XP Play Dough is Experience Presence recognition. It is not money, cryptocurrency, wages, credit, or a measure of your worth.</p>' + confirmationDetails(info);
+    content.innerHTML = '<h2>LAUGH Event Confirmed</h2>' + xp + '<p>XP Play Dough is Experience Presence recognition. It is not money, cryptocurrency, wages, credit, or a measure of your worth.</p>' + confirmationDetails(info) + leaveActions();
   };
 
   const renderWaitingOnOperator = (info) => {

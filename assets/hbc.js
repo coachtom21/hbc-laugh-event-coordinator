@@ -76,11 +76,6 @@
     }
   };
 
-  const organizerCta = (organizer) => {
-    if (!organizer || !organizer.dashboard_url) return '';
-    return `<a class="hbc-button" href="${esc(organizer.dashboard_url)}">Organizer dashboard</a>`;
-  };
-
   const showError = (message) => {
     const existing = content.querySelector('.hbc-error');
     if (existing) existing.remove();
@@ -194,7 +189,6 @@
       <p>Your RSVP is recorded. Showing up is confirmed later, when the host phone starts an encounter and another phone scans the code.</p>
       <div class="hbc-actions">
         <button class="hbc-button hbc-secondary" type="button" id="hbc-choose-host">Become the host</button>
-        ${organizerCta(result.organizer)}
       </div>`;
     document.querySelector('#hbc-choose-host').onclick = () => {
       if (result.organizer && result.organizer.name) {
@@ -332,7 +326,6 @@
       const faithUrl = practiceFaithExploreUrl();
       content.innerHTML = `
         ${orgBanner}
-        ${entry.organizer && entry.organizer.dashboard_url ? `<div class="hbc-actions">${organizerCta(entry.organizer)}</div>` : ''}
         <h2>Choose your current event</h2>
         <p>Organization name appears with each event. Search, select, or enter the short code printed beside the QR.</p>
         <form id="hbc-event-search" class="hbc-field">
@@ -483,7 +476,6 @@
     content.innerHTML = `
       ${emailPrompt}
       <p><strong>Device status: ${route.device_state === 'registered' ? 'Registered' : 'Registration required'}</strong></p>
-      ${route.organizer && route.organizer.dashboard_url ? `<div class="hbc-actions">${organizerCta(route.organizer)}</div>` : ''}
       <h2>${esc(event.name)}</h2>
       <p>${esc(formatEventDateTime(event.starts_at))}${event.location ? ' · ' + esc(event.location) : ''}</p>
       <form id="hbc-rsvp">
@@ -687,7 +679,7 @@
     if (eventUuid) {
       try {
         const entry = await api('public/entry?event=' + encodeURIComponent(eventUuid));
-        if (entry.data && entry.data.route_view === 'operator_router') {
+        if (entry.data && entry.data.route_view === 'operator_router' && entry.data.acting_as && entry.data.acting_as.role === 'host') {
           renderOperatorPrompt(entry.data);
           return;
         }
@@ -723,18 +715,20 @@
       content.innerHTML = '<h2>Assignment unavailable</h2><p>No active Host or Greeter assignment was returned for this event.</p>';
       return;
     }
-    const capacityControl = authorizations.length > 1
-      ? `<label>Acting as for this event<select id="hbc-acting-as">${authorizations.map((a) => `<option value="${esc(a.assignment_uuid)}"${a.assignment_uuid === route.acting_as.assignment_uuid ? ' selected' : ''}>${esc(a.role === 'host' ? 'Host — manage event and encounters' : 'Greeter — initiate encounters')}</option>`).join('')}</select></label>`
-      : `<p><strong>Acting as:</strong> ${esc(route.acting_as.role === 'host' ? 'Host' : 'Greeter')}</p>`;
-    const hostAction = route.acting_as.role === 'host' && route.acting_as.dashboard_url
+    const hostTools = route.acting_as.role === 'host';
+    const capacityControl = `<p><strong>Acting as:</strong> Host</p>`;
+    const hostAction = hostTools && route.acting_as.dashboard_url
       ? `<a class="hbc-button hbc-secondary" href="${esc(route.acting_as.dashboard_url)}">Organizer dashboard</a>`
+      : '';
+    const initiate = hostTools
+      ? '<button class="hbc-button" id="hbc-initiate">Initiate Encounter</button>'
       : '';
     content.innerHTML = `
       <h2>${esc(route.event.name)}</h2>
       ${capacityControl}
-      <p><strong>Initiate an attendance encounter for this event?</strong></p>
+      ${hostTools ? '<p><strong>Initiate an attendance encounter for this event?</strong></p>' : '<p>Your RSVP is recorded.</p>'}
       <div class="hbc-actions">
-        <button class="hbc-button" id="hbc-initiate">Initiate Encounter</button>
+        ${initiate}
         ${hostAction}
         <button class="hbc-button hbc-secondary" id="hbc-not-now">Not Now</button>
       </div>`;
@@ -758,9 +752,12 @@
       }
     };
 
-    document.querySelector('#hbc-initiate').onclick = () => {
-      renderEncounterType(route);
-    };
+    const initiateButton = document.querySelector('#hbc-initiate');
+    if (initiateButton) {
+      initiateButton.onclick = () => {
+        renderEncounterType(route);
+      };
+    }
   };
 
   const encounterTypeLabel = (type) => {
